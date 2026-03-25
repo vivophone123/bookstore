@@ -1,0 +1,16 @@
+[
+  {
+    "orderId": "ORD-4366",
+    "date": "25/3/2569 18:13:57",
+    "items": [
+      {
+        "id": 2,
+        "title": "เจาะลึก Node.js",
+        "author": "สมหญิง",
+        "price": 350,
+        "cover": "https://via.placeholder.com/150/FF0000/FFFFFF?Text=Node+Book"
+      }
+    ],
+    "totalPrice": 350
+  }
+]

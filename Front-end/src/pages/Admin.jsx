@@ -1,0 +1,144 @@
+// Front-end/src/pages/Admin.jsx
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+
+export default function Admin() {
+  const [products, setProducts] = useState([]);
+  
+  // State สำหรับฟอร์มเพิ่มสินค้า
+  const [title, setTitle] = useState('');
+  const [author, setAuthor] = useState('');
+  const [price, setPrice] = useState('');
+  
+  // แก้นี่: coverImage ตอนนี้จะเก็บ "ไฟล์วัตถุ" (File Object) ไม่ใช่ข้อความ URL
+  const [coverImageFile, setCoverImageFile] = useState(null); 
+
+  const token = localStorage.getItem('token');
+
+  const fetchProducts = async () => {
+    try {
+      const res = await axios.get('http://localhost:5000/api/products');
+      setProducts(res.data);
+    } catch (error) {
+      console.error('ดึงข้อมูลสินค้าไม่สำเร็จ', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchProducts();
+  }, []);
+
+  // 🔴 ฟังก์ชันกดเพิ่มสินค้า (แก้ใหม่หมด)
+  const handleAddProduct = async (e) => {
+    e.preventDefault();
+    if (!coverImageFile) return alert('กรุณาเลือกรูปปกหนังสือ');
+
+    // ✅ หัวใจสำคัญ: เมื่อต้องการส่งไฟล์ ต้องใช้ FormData แทน JSON ธรรมดา
+    const formData = new FormData();
+    formData.append('title', title);
+    formData.append('author', author);
+    formData.append('price', Number(price));
+    formData.append('coverImage', coverImageFile); // ชื่อฟิลด์ต้องตรงกับใน multer (`.single('coverImage')`)
+    formData.append('stock', 10); //Dummy stock
+
+    try {
+      // ส่ง FormData ไปที่ Backend พร้อม Token (OWASP A01)
+      await axios.post('http://localhost:5000/api/products', 
+        formData, // ส่ง formData ไปเลย
+        { 
+          headers: { 
+            Authorization: `Bearer ${token}`,
+            // ไม่ต้องใส่ Content-Type: multipart/form-data เอง axios จะจัดการให้
+          } 
+        }
+      );
+      
+      alert('เพิ่มหนังสือสำเร็จ!');
+      setTitle(''); setAuthor(''); setPrice(''); setCoverImageFile(null); // ล้างช่องกรอก
+      // ล้างช่องเลือกไฟล์รูปภาพ manually (วิธีที่ง่ายที่สุด)
+      document.getElementById('coverImageInput').value = null;
+      fetchProducts(); // รีเฟรชรายการ
+    } catch (error) {
+      alert(error.response?.data?.message || 'เกิดข้อผิดพลาดในการเพิ่มสินค้า');
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (window.confirm('แน่ใจนะครับว่าจะลบหนังสือเล่มนี้?')) {
+      try {
+        await axios.delete(`http://localhost:5000/api/products/${id}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        alert('ลบสำเร็จ');
+        fetchProducts();
+      } catch (error) {
+        alert('ลบไม่สำเร็จครับ');
+      }
+    }
+  };
+
+  return (
+    <div style={{ padding: '20px' }}>
+      <h2>⚙️ ระบบจัดการร้านค้า (สำหรับ Owner / Admin)</h2>
+
+      <div style={{ backgroundColor: '#f9f9f9', padding: '20px', borderRadius: '8px', marginBottom: '30px', border: '1px solid #ddd' }}>
+        <h3>➕ เพิ่มหนังสือใหม่</h3>
+        <form onSubmit={handleAddProduct} style={{ display: 'flex', gap: '15px', flexWrap: 'wrap', alignItems: 'center' }}>
+          <input type="text" placeholder="ชื่อหนังสือ" required value={title} onChange={e => setTitle(e.target.value)} style={{ padding: '8px', flex: '1' }} />
+          <input type="text" placeholder="ผู้เขียน" required value={author} onChange={e => setAuthor(e.target.value)} style={{ padding: '8px', flex: '1' }} />
+          <input type="number" placeholder="ราคา" required value={price} onChange={e => setPrice(e.target.value)} style={{ padding: '8px', width: '100px' }} />
+          
+          {/* แก้นี่: เปลี่ยนเป็น input type="file" และรับรูปอย่างเดียว */}
+          <div style={{ flex: '2', display: 'flex', flexDirection: 'column', gap: '5px' }}>
+            <label style={{ fontSize: '14px', color: '#555' }}>รูปปกหนังสือ (เลือกจากเครื่อง):</label>
+            <input 
+              id="coverImageInput"
+              type="file" 
+              accept="image/*" // ให้เลือกได้เฉพาะไฟล์รูปภาพ (OWASP ความปลอดภัยเบื้องต้น)
+              required 
+              onChange={e => setCoverImageFile(e.target.files[0])} // เก็บไฟล์วัตถุลงใน State
+              style={{ padding: '8px', border: '1px solid #ddd', borderRadius: '5px' }} 
+            />
+          </div>
+
+          <button type="submit" style={{ padding: '12px 25px', backgroundColor: '#2ecc71', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold' }}>บันทึก</button>
+        </form>
+      </div>
+
+      <h3>📚 รายการหนังสือในคลัง ({products.length} เล่ม)</h3>
+      <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '10px' }}>
+        <thead>
+          <tr style={{ backgroundColor: '#2c3e50', color: 'white' }}>
+            <th style={{ padding: '10px' }}>รูปภาพ</th>
+            <th style={{ padding: '10px' }}>ชื่อหนังสือ</th>
+            <th style={{ padding: '10px' }}>ผู้เขียน</th>
+            <th style={{ padding: '10px' }}>ราคา</th>
+            <th style={{ padding: '10px' }}>จัดการ</th>
+          </tr>
+        </thead>
+        <tbody>
+          {products.map((product) => (
+            <tr key={product._id} style={{ textAlign: 'center', borderBottom: '1px solid #ddd' }}>
+              <td style={{ padding: '10px' }}>
+                {/* แก้นี่: ตอนนี้ coverImage เป็นแค่ที่อยู่ไฟล์ (uploads/xxx.jpg) */}
+                {/* เราต้องแปะ URL ของเซิร์ฟเวอร์หลังบ้านนำหน้า (http://localhost:5000/) */}
+                <img 
+                    src={product.coverImage ? `http://localhost:5000/${product.coverImage}` : 'https://via.placeholder.com/50'} 
+                    alt="cover" 
+                    width="50" 
+                    style={{ borderRadius: '4px' }}
+                />
+              </td>
+              <td style={{ padding: '10px' }}>{product.title}</td>
+              <td style={{ padding: '10px' }}>{product.author}</td>
+              <td style={{ padding: '10px', color: '#e74c3c', fontWeight: 'bold' }}>฿{product.price}</td>
+              <td style={{ padding: '10px' }}>
+                <button onClick={() => handleDelete(product._id)} style={{ backgroundColor: '#e74c3c', color: 'white', border: 'none', padding: '5px 10px', borderRadius: '3px', cursor: 'pointer' }}>ลบ</button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}

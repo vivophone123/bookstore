@@ -18,6 +18,7 @@ export default function Login() {
     e.preventDefault();
     try {
       if (isLoginMode) {
+        // ... (โค้ดล็อกอินเดิม ไม่ต้องแก้)
         const res = await axios.post('https://bookstore-api-bmay.onrender.com/api/auth/login', { email, password });
         localStorage.setItem('token', res.data.token);
         localStorage.setItem('user', JSON.stringify(res.data.user));
@@ -25,6 +26,18 @@ export default function Login() {
         navigate('/');
         window.location.reload();
       } else {
+        // 🌟 ดักจับความปลอดภัยของรหัสผ่านตอนสมัครสมาชิก 🌟
+        if (password.length < 8) {
+            return alert('❌ รหัสผ่านต้องมีความยาวอย่างน้อย 8 ตัวอักษรครับ');
+        }
+        if (!/\d/.test(password)) { // ตรวจสอบว่ามีตัวเลขอย่างน้อย 1 ตัวไหม
+            return alert('❌ รหัสผ่านต้องมีตัวเลข (0-9) อย่างน้อย 1 ตัวครับ');
+        }
+        if (!/[a-zA-Z]/.test(password)) { // ตรวจสอบว่ามีตัวอักษรภาษาอังกฤษไหม
+            return alert('❌ รหัสผ่านต้องมีตัวอักษรภาษาอังกฤษอย่างน้อย 1 ตัวครับ');
+        }
+
+        // ถ้ารหัสผ่านผ่านกฎทุกข้อ ค่อยส่งไปบันทึก
         await axios.post('https://bookstore-api-bmay.onrender.com/api/auth/register', { username, email, password, role });
         alert('สมัครสมาชิกสำเร็จ! กรุณาเข้าสู่ระบบ');
         setIsLoginMode(true);
@@ -33,7 +46,7 @@ export default function Login() {
       alert(error.response?.data?.message || 'เกิดข้อผิดพลาดจากเซิร์ฟเวอร์');
     }
   };
-
+  
   // ฟังก์ชันใหม่: รีเซ็ตรหัสผ่าน
   const handleResetPassword = async (e) => {
       e.preventDefault();

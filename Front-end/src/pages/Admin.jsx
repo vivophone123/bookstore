@@ -1,16 +1,15 @@
 
+// Front-end/src/pages/Admin.jsx
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
 export default function Admin() {
   const [products, setProducts] = useState([]);
-  
- 
+
   const [title, setTitle] = useState('');
+  const [category, setCategory] = useState('นิยาย/วรรณกรรม');
   const [author, setAuthor] = useState('');
   const [price, setPrice] = useState('');
-  
-
   const [coverImageFile, setCoverImageFile] = useState(null); 
 
   const token = localStorage.getItem('token');
@@ -28,36 +27,32 @@ export default function Admin() {
     fetchProducts();
   }, []);
 
-
   const handleAddProduct = async (e) => {
     e.preventDefault();
     if (!coverImageFile) return alert('กรุณาเลือกรูปปกหนังสือ');
 
-    
     const formData = new FormData();
     formData.append('title', title);
     formData.append('author', author);
     formData.append('price', Number(price));
+    formData.append('category', category); // 🌟 ส่งหมวดหมู่ไปให้ Backend
     formData.append('coverImage', coverImageFile); 
     formData.append('stock', 10); 
 
     try {
-      // ส่ง FormData ไปที่ Backend พร้อม Token (OWASP A01)
       await axios.post('https://bookstore-api-bmay.onrender.com/api/products', 
-        formData, // ส่ง formData ไปเลย
+        formData, 
         { 
           headers: { 
             Authorization: `Bearer ${token}`,
-            // ไม่ต้องใส่ Content-Type: multipart/form-data เอง axios จะจัดการให้
           } 
         }
       );
       
       alert('เพิ่มหนังสือสำเร็จ!');
-      setTitle(''); setAuthor(''); setPrice(''); setCoverImageFile(null); // ล้างช่องกรอก
-      // ล้างช่องเลือกไฟล์รูปภาพ manually (วิธีที่ง่ายที่สุด)
+      setTitle(''); setAuthor(''); setPrice(''); setCoverImageFile(null); setCategory('นิยาย/วรรณกรรม');
       document.getElementById('coverImageInput').value = null;
-      fetchProducts(); // รีเฟรชรายการ
+      fetchProducts(); 
     } catch (error) {
       alert(error.response?.data?.message || 'เกิดข้อผิดพลาดในการเพิ่มสินค้า');
     }
@@ -83,25 +78,35 @@ export default function Admin() {
 
       <div style={{ backgroundColor: '#f9f9f9', padding: '20px', borderRadius: '8px', marginBottom: '30px', border: '1px solid #ddd' }}>
         <h3>➕ เพิ่มหนังสือใหม่</h3>
+        
+        {/* 🌟 ฟอร์มกรอกข้อมูลพร้อม Dropdown เลือกหมวดหมู่ */}
         <form onSubmit={handleAddProduct} style={{ display: 'flex', gap: '15px', flexWrap: 'wrap', alignItems: 'center' }}>
           <input type="text" placeholder="ชื่อหนังสือ" required value={title} onChange={e => setTitle(e.target.value)} style={{ padding: '8px', flex: '1' }} />
           <input type="text" placeholder="ผู้เขียน" required value={author} onChange={e => setAuthor(e.target.value)} style={{ padding: '8px', flex: '1' }} />
           <input type="number" placeholder="ราคา" required value={price} onChange={e => setPrice(e.target.value)} style={{ padding: '8px', width: '100px' }} />
           
-          {/* แก้นี่: เปลี่ยนเป็น input type="file" และรับรูปอย่างเดียว */}
+          {/* 🌟 ช่องเลือกหมวดหมู่ */}
+          <select value={category} onChange={e => setCategory(e.target.value)} style={{ padding: '8px', flex: '1', borderRadius: '5px', border: '1px solid #ddd' }}>
+            <option value="นิยาย/วรรณกรรม">นิยาย/วรรณกรรม</option>
+            <option value="การ์ตูน/มังงะ">การ์ตูน/มังงะ</option>
+            <option value="การศึกษา/ตำรา">การศึกษา/ตำรา</option>
+            <option value="ธุรกิจ/พัฒนาตนเอง">ธุรกิจ/พัฒนาตนเอง</option>
+            <option value="เทคโนโลยี/คอมพิวเตอร์">เทคโนโลยี/คอมพิวเตอร์</option>
+          </select>
+
           <div style={{ flex: '2', display: 'flex', flexDirection: 'column', gap: '5px' }}>
-            <label style={{ fontSize: '14px', color: '#555' }}>รูปปกหนังสือ (เลือกจากเครื่อง):</label>
+            <label style={{ fontSize: '14px', color: '#555' }}>รูปปกหนังสือ:</label>
             <input 
               id="coverImageInput"
               type="file" 
-              accept="image/*" // ให้เลือกได้เฉพาะไฟล์รูปภาพ (OWASP ความปลอดภัยเบื้องต้น)
+              accept="image/*" 
               required 
-              onChange={e => setCoverImageFile(e.target.files[0])} // เก็บไฟล์วัตถุลงใน State
-              style={{ padding: '8px', border: '1px solid #ddd', borderRadius: '5px' }} 
+              onChange={e => setCoverImageFile(e.target.files[0])} 
+              style={{ padding: '8px', border: '1px solid #ddd', borderRadius: '5px', backgroundColor: 'white' }} 
             />
           </div>
 
-          <button type="submit" style={{ padding: '12px 25px', backgroundColor: '#2ecc71', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold' }}>บันทึก</button>
+          <button type="submit" style={{ padding: '12px 25px', backgroundColor: '#2ecc71', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold' }}>➕ เพิ่มสินค้า</button>
         </form>
       </div>
 
@@ -112,16 +117,15 @@ export default function Admin() {
             <th style={{ padding: '10px' }}>รูปภาพ</th>
             <th style={{ padding: '10px' }}>ชื่อหนังสือ</th>
             <th style={{ padding: '10px' }}>ผู้เขียน</th>
+            <th style={{ padding: '10px' }}>หมวดหมู่</th>
             <th style={{ padding: '10px' }}>ราคา</th>
             <th style={{ padding: '10px' }}>จัดการ</th>
           </tr>
         </thead>
         <tbody>
           {products.map((product) => (
-            <tr key={product._id} style={{ textAlign: 'center', borderBottom: '1px solid #ddd' }}>
+            <tr key={product._id} style={{ textAlign: 'center', borderBottom: '1px solid #ddd', backgroundColor: 'white' }}>
               <td style={{ padding: '10px' }}>
-                {/* แก้นี่: ตอนนี้ coverImage เป็นแค่ที่อยู่ไฟล์ (uploads/xxx.jpg) */}
-                {/* เราต้องแปะ URL ของเซิร์ฟเวอร์หลังบ้านนำหน้า (https://bookstore-api-bmay.onrender.com/) */}
                 <img 
                     src={product.coverImage ? `https://bookstore-api-bmay.onrender.com/${product.coverImage}` : 'https://via.placeholder.com/50'} 
                     alt="cover" 
@@ -131,9 +135,14 @@ export default function Admin() {
               </td>
               <td style={{ padding: '10px' }}>{product.title}</td>
               <td style={{ padding: '10px' }}>{product.author}</td>
+              <td style={{ padding: '10px' }}>
+                 <span style={{ backgroundColor: '#ecf0f1', padding: '3px 8px', borderRadius: '10px', fontSize: '12px' }}>
+                    {product.category || 'ทั่วไป'}
+                 </span>
+              </td>
               <td style={{ padding: '10px', color: '#e74c3c', fontWeight: 'bold' }}>฿{product.price}</td>
               <td style={{ padding: '10px' }}>
-                <button onClick={() => handleDelete(product._id)} style={{ backgroundColor: '#e74c3c', color: 'white', border: 'none', padding: '5px 10px', borderRadius: '3px', cursor: 'pointer' }}>ลบ</button>
+                <button onClick={() => handleDelete(product._id)} style={{ backgroundColor: '#e74c3c', color: 'white', border: 'none', padding: '5px 10px', borderRadius: '3px', cursor: 'pointer' }}>🗑️ ลบ</button>
               </td>
             </tr>
           ))}

@@ -231,12 +231,58 @@ export default function Cart() {
                     </div>
                 </div>
 
-                <form onSubmit={handleCheckout} style={{ marginTop: '30px', padding: '25px', border: '2px solid #eee', borderRadius: '10px', backgroundColor: '#fff', display:'flex', flexDirection:'column', gap:'15px' }}>
-                    <h3 style={{ color: '#2c3e50' }}>💳 ชำระเงินและแนบสลิป</h3>
-                    <p style={{ fontSize: '14px', color: '#7f8c8d' }}>กรุณาโอนเงินมาที่บัญชี: <b>123-4-56789-0 (ธนาคารจำลอง)</b></p>
-                    <input id="slipInput" type="file" accept="image/*" required onChange={(e) => setSlipFile(e.target.files[0])} style={{ padding: '10px', border: '1px solid #eee', borderRadius: '5px', width:'100%' }} />
-                    <button type="submit" style={{ width: '100%', padding: '15px', backgroundColor: '#2ecc71', color: 'white', border: 'none', borderRadius: '8px', fontSize: '18px', fontWeight: 'bold', cursor: 'pointer', transition:'background-color 0.2s' }}>✅ ยืนยันคำสั่งซื้อ</button>
-                </form>
+                {/* ฟอร์มอัปโหลดสลิปและปุ่มสั่งซื้อ (UI ใหม่สวยขึ้น + QR Code) */}
+          <form onSubmit={handleCheckout} style={{ 
+            marginTop: '30px', padding: '30px', border: 'none', 
+            borderRadius: '15px', backgroundColor: '#fff', 
+            boxShadow: '0 8px 25px rgba(0,0,0,0.05)', 
+            display: 'flex', flexDirection: 'column', gap: '20px' 
+          }}>
+            <h3 style={{ color: '#2c3e50', textAlign: 'center', fontSize: '22px', borderBottom: '2px solid #f1f2f6', paddingBottom: '15px' }}>
+              💳 ช่องทางการชำระเงิน
+            </h3>
+            
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '20px', alignItems: 'center', justifyContent: 'center', backgroundColor: '#f8f9fa', padding: '20px', borderRadius: '10px' }}>
+                {/* รูปจำลอง QR Code */}
+                <img 
+                  src="https://upload.wikimedia.org/wikipedia/commons/d/d0/QR_code_for_mobile_English_Wikipedia.svg" 
+                  alt="QR Code" 
+                  style={{ width: '120px', height: '120px', border: '5px solid white', borderRadius: '10px', boxShadow: '0 4px 10px rgba(0,0,0,0.1)' }}
+                />
+                
+                {/* ข้อมูลบัญชีธนาคาร */}
+                <div style={{ textAlign: 'left' }}>
+                  <p style={{ fontSize: '18px', fontWeight: 'bold', color: '#2c3e50', margin: '0 0 5px 0' }}>ธนาคารกสิกรไทย (KBank)</p>
+                  <p style={{ fontSize: '24px', color: '#27ae60', fontWeight: 'bold', margin: '0 0 5px 0', letterSpacing: '1px' }}>123-4-56789-0</p>
+                  <p style={{ fontSize: '14px', color: '#7f8c8d', margin: '0' }}>ชื่อบัญชี: บจก. อี-บุ๊กสโตร์ ไทยแลนด์</p>
+                  <p style={{ fontSize: '14px', color: '#e74c3c', marginTop: '10px', fontWeight: 'bold' }}>*ยอดที่ต้องโอน: ฿{totalPrice}</p>
+                </div>
+            </div>
+
+            <div style={{ marginTop: '10px' }}>
+              <label style={{ display: 'block', marginBottom: '10px', fontWeight: 'bold', color: '#34495e' }}>📸 แนบสลิปโอนเงิน (หลักฐานการชำระเงิน)</label>
+              <input 
+                id="slipInput" type="file" accept="image/*" required 
+                onChange={(e) => setSlipFile(e.target.files[0])} 
+                style={{ 
+                  padding: '12px', border: '2px dashed #bdc3c7', borderRadius: '8px', 
+                  width: '100%', backgroundColor: '#fdfdfd', cursor: 'pointer' 
+                }} 
+              />
+            </div>
+
+            <button type="submit" style={{ 
+              width: '100%', padding: '18px', backgroundColor: '#2ecc71', 
+              color: 'white', border: 'none', borderRadius: '10px', 
+              fontSize: '20px', fontWeight: 'bold', cursor: 'pointer', 
+              boxShadow: '0 4px 15px rgba(46, 204, 113, 0.4)', transition: 'transform 0.2s' 
+            }}
+            onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
+            onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}
+            >
+              ✅ ยืนยันคำสั่งซื้อและส่งสลิป
+            </button>
+          </form>
                 </>
             )}
         </div>

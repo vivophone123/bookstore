@@ -4,6 +4,7 @@ import Home from './pages/Home';
 import Login from './pages/Login';
 import Cart from './pages/Cart';
 import Admin from './pages/Admin';
+import Profile from './pages/Profile';
 
 
 function Navbar() {

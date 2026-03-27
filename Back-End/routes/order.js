@@ -30,6 +30,22 @@ router.post('/checkout', protect, authorize('customer'), upload.single('slip'), 
     }
 });
 
+// ==========================================
+// 🟢 [GET] ดึงประวัติการสั่งซื้อของตัวเอง (สำหรับลูกค้า)
+// ==========================================
+router.get('/myorders', protect, async (req, res) => {
+    try {
+        // หาออเดอร์ที่มี user id ตรงกับคนที่ล็อกอินอยู่
+        const orders = await Order.find({ user: req.user.id })
+            .populate('items.product', 'title coverImage price') // ดึงข้อมูลหนังสือมาโชว์ด้วย
+            .sort({ createdAt: -1 }); // เรียงจากออเดอร์ใหม่สุดไปเก่าสุด
+
+        res.json(orders);
+    } catch (error) {
+        res.status(500).json({ message: 'ดึงข้อมูลประวัติการสั่งซื้อไม่สำเร็จ', error: error.message });
+    }
+});
+
 // 🔴 [GET] เจ้าของร้าน/แอดมิน ดูคำสั่งซื้อทั้งหมด
 router.get('/', protect, authorize('owner', 'admin'), async (req, res) => {
     try {

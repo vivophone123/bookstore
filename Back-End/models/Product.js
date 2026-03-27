@@ -7,14 +7,13 @@ const productSchema = new mongoose.Schema({
     description: { type: String },
     price: { type: Number, required: true },
     stock: { type: Number, required: true, default: 0 },
-    category: { type: String, default: 'ทั่วไป' },                        
-    coverImage: { type: String, default: 'https://via.placeholder.com/150' }, // เก็บ URL รูปภาพ
-    user: { 
-
-        type: mongoose.Schema.Types.ObjectId, 
-        ref: 'User', 
-        required: true 
-    }
+    
+    // 🌟 ตัวการอยู่ที่นี่ครับ! เราต้องบังคับให้ Database เปิดรับคำว่า category
+    category: { type: String, default: 'ทั่วไป' }, 
+    sold: { type: Number, default: 0 },
+    
+    coverImage: { type: String },
+    user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
 }, { timestamps: true });
 
 module.exports = mongoose.model('Product', productSchema);

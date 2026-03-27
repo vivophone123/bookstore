@@ -3,6 +3,8 @@ const express = require('express');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const router = express.Router();
+const { protect } = require('../middleware/authMiddleware');
+const bcrypt = require('bcryptjs');
 
 // [POST] สมัครสมาชิก
 router.post('/register', async (req, res) => {

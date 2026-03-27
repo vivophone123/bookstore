@@ -10,6 +10,9 @@ const bcrypt = require('bcryptjs');
 router.post('/register', async (req, res) => {
     try {
         const { username, email, password, role } = req.body;
+        if (password.length < 8 || !/\d/.test(password) || !/[a-zA-Z]/.test(password)) {
+            return res.status(400).json({ message: 'รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร และประกอบด้วยตัวอักษรและตัวเลข' });
+        }
         
         // เช็กว่ามีอีเมลนี้หรือยัง
         const userExists = await User.findOne({ email });

@@ -61,7 +61,7 @@ export default function Cart() {
   const handleApplyCoupon = async () => {
     if (!token) return alert('กรุณาเข้าสู่ระบบก่อนใช้คูปองครับ');
     try {
-      const res = await axios.post('http://localhost:5000/api/coupons/validate', 
+      const res = await axios.post('https://bookstore-api-bmay.onrender.com/api/coupons/validate', 
         { code: couponCode },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -89,7 +89,7 @@ export default function Cart() {
     formData.append('items', JSON.stringify(itemsData)); 
 
     try {
-      await axios.post('http://localhost:5000/api/orders/checkout', formData, {
+      await axios.post('https://bookstore-api-bmay.onrender.com/api/orders/checkout', formData, {
         headers: { Authorization: `Bearer ${token}` }
       });
       alert('🎉 สั่งซื้อสำเร็จ! กรุณารอเจ้าของร้านตรวจสอบสลิปครับ');
@@ -106,7 +106,7 @@ export default function Cart() {
   // 🔴 ฟังก์ชันสำหรับ Admin: ดึงข้อมูล Order ทั้งหมด
   const fetchOrders = async () => {
       try {
-          const res = await axios.get('http://localhost:5000/api/orders', {
+          const res = await axios.get('https://bookstore-api-bmay.onrender.com/api/orders', {
               headers: { Authorization: `Bearer ${token}` }
           });
           setOrders(res.data);
@@ -118,7 +118,7 @@ export default function Cart() {
   // 🔴 ฟังก์ชันสำหรับ Admin: อัปเดตสถานะชำระเงินแบบ Instant UI Update
   const handleUpdatePaymentStatus = async (orderId, newStatus) => {
     try {
-        await axios.put(`http://localhost:5000/api/orders/${orderId}/status`, 
+        await axios.put(`https://bookstore-api-bmay.onrender.com/api/orders/${orderId}/status`, 
             { paymentStatus: newStatus },
             { headers: { Authorization: `Bearer ${token}` } }
         );
@@ -167,7 +167,7 @@ export default function Cart() {
                                 <td style={{ padding: '12px' }}>
                                     {/* ลูกเล่นใหม่! กดแล้วเปิด SlipModal */}
                                     <button 
-                                        onClick={() => setShowSlipUrl(`http://localhost:5000/${order.slipImage}`)}
+                                        onClick={() => setShowSlipUrl(`https://bookstore-api-bmay.onrender.com/${order.slipImage}`)}
                                         style={{ backgroundColor: '#3498db', color: 'white', border: 'none', padding: '5px 10px', borderRadius: '5px', cursor: 'pointer', fontSize:'12px' }}>
                                         👀 ดูสลิป
                                     </button>
@@ -208,7 +208,7 @@ export default function Cart() {
                     {cartItems.map((item, index) => (
                     <li key={index} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '15px', borderBottom: '1px solid #eee', backgroundColor: '#f9f9f9', borderRadius: '8px', marginBottom: '10px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                        <img src={item.coverImage ? `http://localhost:5000/${item.coverImage}` : 'https://via.placeholder.com/50'} alt="cover" width="50" style={{ borderRadius: '4px' }} />
+                        <img src={item.coverImage ? `https://bookstore-api-bmay.onrender.com/${item.coverImage}` : 'https://via.placeholder.com/50'} alt="cover" width="50" style={{ borderRadius: '4px' }} />
                         <span style={{ fontSize: '16px', fontWeight: 'bold' }}>{item.title}</span>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>

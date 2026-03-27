@@ -19,7 +19,7 @@ export default function Login() {
     try {
       if (isLogin) {
         // 🟢 โหมดเข้าสู่ระบบ (Login)
-        const res = await axios.post('http://localhost:5000/api/auth/login', { email, password });
+        const res = await axios.post('https://bookstore-api-bmay.onrender.com/api/auth/login', { email, password });
         
         // เก็บ Token และข้อมูล User ลงในระบบของเบราว์เซอร์
         localStorage.setItem('token', res.data.token);
@@ -29,7 +29,7 @@ export default function Login() {
         window.location.href = '/'; // ใช้ window.location เพื่อบังคับให้ Navbar อัปเดตข้อมูลใหม่
       } else {
         // 🔵 โหมดสมัครสมาชิก (Register)
-        const res = await axios.post('http://localhost:5000/api/auth/register', { 
+        const res = await axios.post('https://bookstore-api-bmay.onrender.com/api/auth/register', { 
           username, email, password, role 
         });
         

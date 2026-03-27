@@ -5,12 +5,12 @@ import Login from './pages/Login';
 import Cart from './pages/Cart';
 import Admin from './pages/Admin';
 
-// คอมโพเนนต์แถบเมนูด้านบน (Navbar)
+
 function Navbar() {
   const navigate = useNavigate();
-  // เช็กว่ามี Token ในระบบหรือยัง (แปลว่า Login แล้ว)
+
   const token = localStorage.getItem('token'); 
-  // ดึงข้อมูล User มาดูว่าสิทธิ์อะไร (Customer, Owner, Admin)
+
   const user = JSON.parse(localStorage.getItem('user')); 
 
   const handleLogout = () => {

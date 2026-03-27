@@ -11,7 +11,7 @@ export default function Home() {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const res = await axios.get('http://localhost:5000/api/products');
+        const res = await axios.get('https://bookstore-api-bmay.onrender.com/api/products');
         setProducts(res.data);
       } catch (error) {
         console.error('ดึงข้อมูลสินค้าไม่สำเร็จ', error);
@@ -51,7 +51,7 @@ export default function Home() {
               
               {/* รูปปกหนังสือ (ใช้ URL จากเซิร์ฟเวอร์) */}
               <img 
-                src={product.coverImage ? `http://localhost:5000/${product.coverImage}` : 'https://via.placeholder.com/150'} 
+                src={product.coverImage ? `https://bookstore-api-bmay.onrender.com/${product.coverImage}` : 'https://via.placeholder.com/150'} 
                 alt={product.title} 
                 style={{ width: '100%', height: '300px', objectFit: 'cover', borderRadius: '8px', marginBottom: '15px' }} 
               />

@@ -1,23 +1,23 @@
-// Front-end/src/pages/Admin.jsx
+
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
 export default function Admin() {
   const [products, setProducts] = useState([]);
   
-  // State สำหรับฟอร์มเพิ่มสินค้า
+ 
   const [title, setTitle] = useState('');
   const [author, setAuthor] = useState('');
   const [price, setPrice] = useState('');
   
-  // แก้นี่: coverImage ตอนนี้จะเก็บ "ไฟล์วัตถุ" (File Object) ไม่ใช่ข้อความ URL
+
   const [coverImageFile, setCoverImageFile] = useState(null); 
 
   const token = localStorage.getItem('token');
 
   const fetchProducts = async () => {
     try {
-      const res = await axios.get('http://localhost:5000/api/products');
+      const res = await axios.get('https://bookstore-api-bmay.onrender.com/api/products');
       setProducts(res.data);
     } catch (error) {
       console.error('ดึงข้อมูลสินค้าไม่สำเร็จ', error);
@@ -28,22 +28,22 @@ export default function Admin() {
     fetchProducts();
   }, []);
 
-  // 🔴 ฟังก์ชันกดเพิ่มสินค้า (แก้ใหม่หมด)
+
   const handleAddProduct = async (e) => {
     e.preventDefault();
     if (!coverImageFile) return alert('กรุณาเลือกรูปปกหนังสือ');
 
-    // ✅ หัวใจสำคัญ: เมื่อต้องการส่งไฟล์ ต้องใช้ FormData แทน JSON ธรรมดา
+    
     const formData = new FormData();
     formData.append('title', title);
     formData.append('author', author);
     formData.append('price', Number(price));
-    formData.append('coverImage', coverImageFile); // ชื่อฟิลด์ต้องตรงกับใน multer (`.single('coverImage')`)
-    formData.append('stock', 10); //Dummy stock
+    formData.append('coverImage', coverImageFile); 
+    formData.append('stock', 10); 
 
     try {
       // ส่ง FormData ไปที่ Backend พร้อม Token (OWASP A01)
-      await axios.post('http://localhost:5000/api/products', 
+      await axios.post('https://bookstore-api-bmay.onrender.com/api/products', 
         formData, // ส่ง formData ไปเลย
         { 
           headers: { 
@@ -66,7 +66,7 @@ export default function Admin() {
   const handleDelete = async (id) => {
     if (window.confirm('แน่ใจนะครับว่าจะลบหนังสือเล่มนี้?')) {
       try {
-        await axios.delete(`http://localhost:5000/api/products/${id}`, {
+        await axios.delete(`https://bookstore-api-bmay.onrender.com/api/products/${id}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         alert('ลบสำเร็จ');
@@ -121,9 +121,9 @@ export default function Admin() {
             <tr key={product._id} style={{ textAlign: 'center', borderBottom: '1px solid #ddd' }}>
               <td style={{ padding: '10px' }}>
                 {/* แก้นี่: ตอนนี้ coverImage เป็นแค่ที่อยู่ไฟล์ (uploads/xxx.jpg) */}
-                {/* เราต้องแปะ URL ของเซิร์ฟเวอร์หลังบ้านนำหน้า (http://localhost:5000/) */}
+                {/* เราต้องแปะ URL ของเซิร์ฟเวอร์หลังบ้านนำหน้า (https://bookstore-api-bmay.onrender.com/) */}
                 <img 
-                    src={product.coverImage ? `http://localhost:5000/${product.coverImage}` : 'https://via.placeholder.com/50'} 
+                    src={product.coverImage ? `https://bookstore-api-bmay.onrender.com/${product.coverImage}` : 'https://via.placeholder.com/50'} 
                     alt="cover" 
                     width="50" 
                     style={{ borderRadius: '4px' }}

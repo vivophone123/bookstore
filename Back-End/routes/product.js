@@ -7,7 +7,7 @@ const upload = require('../middleware/uploadMiddleware');
 const router = express.Router();
 
 // ==========================================
-// 🟢 1. [GET] ดึงข้อมูลสินค้าทั้งหมดมาแสดงผล (ตัวที่หายไป เอาคืนมาแล้วครับ!)
+// 🟢 1. [GET] ดึงข้อมูลสินค้าทั้งหมดมาแสดงผล 
 // ==========================================
 router.get('/', async (req, res) => {
     try {
@@ -19,7 +19,7 @@ router.get('/', async (req, res) => {
 });
 
 // ==========================================
-// 🟢 2. [GET] ดึงข้อมูลสินค้าแค่ชิ้นเดียว (ไว้ทำหน้ารายละเอียด)
+// 🟢 2. [GET] ดึงข้อมูลสินค้าแค่ชิ้นเดียว
 // ==========================================
 router.get('/:id', async (req, res) => {
     try {
@@ -32,7 +32,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // ==========================================
-// 🔴 3. [POST] เพิ่มสินค้าใหม่ (โค้ดของคุณธนายุตที่ถูกต้องแล้ว)
+// 🔴 3. [POST] เพิ่มสินค้าใหม่ (🌟 แก้ไขให้รับหมวดหมู่แล้ว)
 // ==========================================
 router.post('/', protect, authorize('owner', 'admin'), upload.single('coverImage'), async (req, res) => {
     try {
@@ -41,31 +41,33 @@ router.post('/', protect, authorize('owner', 'admin'), upload.single('coverImage
             return res.status(400).json({ message: 'กรุณาอัปโหลดรูปปกหนังสือ' });
         }
 
-        // 2. ดึงข้อมูลข้อความที่ส่งมาพร้อมรูป
-        const { title, author, description, price, stock } = req.body;
+        // 🌟 2. ดึงข้อมูล (เพิ่ม category เข้ามาแล้ว)
+        const { title, author, description, price, stock, category } = req.body;
 
         // 3. บันทึกที่อยู่ไฟล์
         const coverImageUrl = req.file.path;
 
+        // 🌟 4. สร้างสินค้าใหม่ลงฐานข้อมูล
         const newProduct = await Product.create({
-            title: title || 'ไม่มีชื่อ', // ใส่ค่าเริ่มต้นกันเหนียว
+            title: title || 'ไม่มีชื่อ', 
             author: author || 'ไม่ระบุผู้แต่ง',
             description: description || '',
             price: Number(price) || 0,
             stock: Number(stock) || 0,
+            category: category || 'ทั่วไป', // 🌟 บันทึกหมวดหมู่ลงไปแล้ว!
             coverImage: coverImageUrl,
             user: req.user.id
         });
         
         res.status(201).json({ message: 'เพิ่มสินค้าสำเร็จ', product: newProduct });
     } catch (error) {
-        console.error("Product Create Error:", error); // ให้มันปริ้น Error ออกมาดูใน Terminal
+        console.error("Product Create Error:", error); 
         res.status(500).json({ message: 'เพิ่มสินค้าไม่สำเร็จ', error: error.message });
     }
 });
 
 // ==========================================
-// 🔴 4. [PUT] แก้ไขสินค้า (ต้องเป็น Owner หรือ Admin)
+// 🔴 4. [PUT] แก้ไขสินค้า 
 // ==========================================
 router.put('/:id', protect, authorize('owner', 'admin'), async (req, res) => {
     try {
@@ -78,7 +80,7 @@ router.put('/:id', protect, authorize('owner', 'admin'), async (req, res) => {
 });
 
 // ==========================================
-// 🔴 5. [DELETE] ลบสินค้า (ต้องมีตัวนี้ ปุ่ม "ลบ" ในตารางถึงจะทำงานครับ)
+// 🔴 5. [DELETE] ลบสินค้า 
 // ==========================================
 router.delete('/:id', protect, authorize('owner', 'admin'), async (req, res) => {
     try {

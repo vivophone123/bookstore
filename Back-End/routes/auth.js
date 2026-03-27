@@ -85,4 +85,57 @@ router.post('/reset-password', async (req, res) => {
     }
 });
 
+// ==========================================
+// 🟢 [GET/PUT] จัดการข้อมูลส่วนตัว (Profile)
+// ==========================================
+
+// ดูโปรไฟล์ตัวเอง (ต้องเข้าสู่ระบบก่อน)
+router.get('/profile', protect, async (req, res) => {
+    try {
+        const user = await User.findById(req.user.id).select('-password'); // ไม่ส่งรหัสผ่านกลับไป
+        res.json(user);
+    } catch (error) {
+        res.status(500).json({ message: 'ดึงข้อมูลผู้ใช้ไม่สำเร็จ' });
+    }
+});
+
+// แก้ไขโปรไฟล์ตัวเอง
+router.put('/profile', protect, async (req, res) => {
+    try {
+        const { username, email } = req.body;
+        const updatedUser = await User.findByIdAndUpdate(
+            req.user.id, 
+            { username, email }, 
+            { new: true, runValidators: true }
+        ).select('-password');
+        
+        res.json({ message: 'อัปเดตข้อมูลสำเร็จ', user: updatedUser });
+    } catch (error) {
+        res.status(500).json({ message: 'อัปเดตข้อมูลไม่สำเร็จ', error: error.message });
+    }
+});
+
+// ==========================================
+// 🔴 [POST] รีเซ็ตรหัสผ่าน (ลืมรหัสผ่าน)
+// ==========================================
+// *หมายเหตุ: ในระบบจริงต้องส่งอีเมลยืนยัน แต่เพื่อจำลองโปรเจกต์ เราจะให้เปลี่ยนรหัสผ่านได้เลยถ้ายืนยันอีเมลถูกต้อง
+router.post('/reset-password', async (req, res) => {
+    try {
+        const { email, newPassword } = req.body;
+        
+        // 1. หาผู้ใช้จากอีเมล
+        const user = await User.findOne({ email });
+        if (!user) return res.status(404).json({ message: 'ไม่พบอีเมลนี้ในระบบ' });
+
+        // 2. เปลี่ยนรหัสผ่านใหม่
+        user.password = newPassword; 
+        // *หมายเหตุ: userSchema.pre('save') ที่เราเคยเขียนไว้ จะทำการ Hash รหัสใหม่ให้อัตโนมัติ!
+        await user.save(); 
+
+        res.json({ message: 'รีเซ็ตรหัสผ่านสำเร็จ คุณสามารถเข้าสู่ระบบด้วยรหัสผ่านใหม่ได้เลย' });
+    } catch (error) {
+        res.status(500).json({ message: 'รีเซ็ตรหัสผ่านไม่สำเร็จ', error: error.message });
+    }
+});
+
 module.exports = router;

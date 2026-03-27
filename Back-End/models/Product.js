@@ -7,9 +7,10 @@ const productSchema = new mongoose.Schema({
     description: { type: String },
     price: { type: Number, required: true },
     stock: { type: Number, required: true, default: 0 },
+    category: { type: String, default: 'ทั่วไป' },                        
     coverImage: { type: String, default: 'https://via.placeholder.com/150' }, // เก็บ URL รูปภาพ
     user: { 
-        // เก็บว่าใครเป็นคนเพิ่มสินค้านี้ (อ้างอิงไปที่ User)
+
         type: mongoose.Schema.Types.ObjectId, 
         ref: 'User', 
         required: true 

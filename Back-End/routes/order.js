@@ -41,18 +41,36 @@ router.get('/', protect, authorize('owner', 'admin'), async (req, res) => {
     }
 });
 
-// 🔴 [PUT] เจ้าของร้าน/แอดมิน อัปเดตสถานะการชำระเงิน (เช่น เปลี่ยนเป็น completed)
-router.put('/:id/status', protect, authorize('owner', 'admin'), async (req, res) => {
+/// ==========================================
+// 🟢 [PUT] อัปเดตสถานะการชำระเงิน + ตัดสต๊อกอัตโนมัติ (เฉพาะ Admin)
+// ==========================================
+router.put('/:id/status', protect, async (req, res) => {
     try {
-        const { paymentStatus } = req.body; // รับค่าสถานะใหม่มา
-        const order = await Order.findByIdAndUpdate(
-            req.params.id, 
-            { paymentStatus: paymentStatus }, 
-            { new: true }
-        );
-        
-        if (!order) return res.status(404).json({ message: 'ไม่พบคำสั่งซื้อนี้' });
-        res.json({ message: 'อัปเดตสถานะสำเร็จ', order });
+        const { paymentStatus } = req.body;
+        const order = await Order.findById(req.params.id);
+
+        if (!order) {
+            return res.status(404).json({ message: 'ไม่พบคำสั่งซื้อนี้' });
+        }
+
+        // 🔥 ไฮไลท์: ถ้ายืนยันว่า "ชำระเงินเรียบร้อย" (completed) ให้ไปหักสต๊อกหนังสือ
+        if (paymentStatus === 'completed' && order.paymentStatus !== 'completed') {
+            // ดึงโมเดล Product มาใช้ (ถ้าด้านบนของไฟล์ยังไม่ได้ import ให้ใส่ const Product = require('../models/Product'); ไว้บนสุดด้วยนะครับ)
+            const Product = require('../models/Product'); 
+            
+            // วนลูปหักสต๊อกหนังสือทุกเล่มที่อยู่ในตะกร้าคำสั่งซื้อนี้
+            for (let item of order.items) {
+                await Product.findByIdAndUpdate(item.product, {
+                    $inc: { stock: -1 } // หักสต๊อกลง 1 เล่ม
+                });
+            }
+        }
+
+        // อัปเดตสถานะของออเดอร์
+        order.paymentStatus = paymentStatus;
+        await order.save();
+
+        res.json({ message: 'อัปเดตสถานะและตัดสต๊อกสำเร็จ', order });
     } catch (error) {
         res.status(500).json({ message: 'อัปเดตสถานะไม่สำเร็จ', error: error.message });
     }

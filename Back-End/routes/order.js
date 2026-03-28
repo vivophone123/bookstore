@@ -53,7 +53,7 @@ router.get('/', protect, authorize('owner', 'admin'), async (req, res) => {
 // ==========================================
 // 🟢 [POST] สร้างคำสั่งซื้อใหม่ + อัปโหลดสลิป
 // ==========================================
-router.post('/', protect, upload.single('slipImage'), async (req, res) => {
+router.post('/checkout', protect, upload.single('slipImage'), async (req, res) => {
     try {
         const { items, totalAmount } = req.body;
         

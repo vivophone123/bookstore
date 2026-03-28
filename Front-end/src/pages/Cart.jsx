@@ -89,7 +89,7 @@ export default function Cart() {
     formData.append('items', JSON.stringify(itemsData)); 
 
     try {
-      await axios.post('https://bookstore-api-bmay.onrender.com/api/orders/checkout', formData, {
+      await axios.post('https://bookstore-api-bmay.onrender.com/api/orders', formData, {
         headers: { Authorization: `Bearer ${token}` }
       });
       alert('🎉 สั่งซื้อสำเร็จ! กรุณารอเจ้าของร้านตรวจสอบสลิปครับ');

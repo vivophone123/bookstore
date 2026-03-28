@@ -83,7 +83,8 @@ export default function Cart() {
     if (!slipFile) return alert('กรุณาแนบสลิปชำระเงินเพื่อยืนยันคำสั่งซื้อครับ');
 
     const formData = new FormData();
-    formData.append('slip', slipFile);
+    // 🔥 แก้ไขตรงนี้: เปลี่ยนจาก 'slip' เป็น 'slipImage' ให้ตรงกับหลังบ้าน!
+    formData.append('slipImage', slipFile); 
     formData.append('totalAmount', totalPrice);
     const itemsData = cartItems.map(item => ({ product: item._id, title: item.title, price: item.price }));
     formData.append('items', JSON.stringify(itemsData)); 
@@ -97,7 +98,7 @@ export default function Cart() {
       setCartItems([]);
       setSlipFile(null);
       document.getElementById('slipInput').value = null; // ล้างช่องเลือกไฟล์
-      navigate('/');
+      navigate('/myorders'); // ส่งลูกค้าไปดูสถานะตัวเองที่หน้าประวัติการสั่งซื้อ
     } catch (error) {
       alert(error.response?.data?.message || 'เกิดข้อผิดพลาดในการสั่งซื้อ');
     }

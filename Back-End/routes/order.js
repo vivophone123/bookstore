@@ -9,13 +9,20 @@ const nodemailer = require('nodemailer'); // 🌟 เรียกใช้ไล
 const router = express.Router();
 
 // ==========================================
-// 🛠️ ฟังก์ชันตั้งค่าการส่งอีเมลผ่าน Gmail App Password
+// 🛠️ ฟังก์ชันตั้งค่าการส่งอีเมล (บังคับใช้ Port 587 เพื่อเลี่ยงการโดนบล็อก)
 // ==========================================
 const transporter = nodemailer.createTransport({
-    service: 'gmail', // 🌟 เปลี่ยนมาใช้ Gmail แทน Brevo
+    host: 'smtp.gmail.com',
+    port: 587,
+    secure: false, // บังคับใช้ false สำหรับพอร์ต 587
+    requireTLS: true,
     auth: {
-        user: process.env.EMAIL_USER, // อีเมล Gmail ของเรา
-        pass: process.env.EMAIL_PASS  // App Password 16 ตัวที่ได้มา
+        user: process.env.EMAIL_USER, 
+        pass: process.env.EMAIL_PASS  
+    },
+    tls: {
+        // ยอมให้ข้ามการตรวจสอบใบรับรองบางอย่างที่ทำให้ Render ชอบงอแง
+        rejectUnauthorized: false 
     }
 });
 

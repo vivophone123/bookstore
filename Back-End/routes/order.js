@@ -1,32 +1,23 @@
 // Back-End/routes/order.js
 const express = require('express');
 const Order = require('../models/Order');
+const Product = require('../models/Product');
+const User = require('../models/User'); // 🌟 เพิ่มบรรทัดนี้เพื่อดึงอีเมลลูกค้า
 const { protect, authorize } = require('../middleware/authMiddleware');
-const upload = require('../middleware/uploadMiddleware'); // ดึงตัวรับไฟล์มาใช้
+const upload = require('../middleware/uploadMiddleware');
+const nodemailer = require('nodemailer'); // 🌟 เรียกใช้ไลบรารีส่งอีเมล
 const router = express.Router();
 
-// 🟢 [POST] ลูกค้าสั่งซื้อสินค้าพร้อมแนบสลิป (ต้อง Login เป็น Customer)
-// ใช้ upload.single('slip') เพื่อรับไฟล์รูป 1 ไฟล์ที่ส่งมาในชื่อฟิลด์ 'slip'
-router.post('/checkout', protect, authorize('customer'), upload.single('slip'), async (req, res) => {
-    try {
-        if (!req.file) {
-            return res.status(400).json({ message: 'กรุณาแนบสลิปชำระเงิน' });
-        }
-
-        // แปลงข้อมูล items จาก JSON String ให้กลับเป็น Array (เพราะส่งมากับ Form Data)
-        const items = JSON.parse(req.body.items);
-        const totalAmount = req.body.totalAmount;
-
-        const newOrder = await Order.create({
-            user: req.user.id,
-            items: items,
-            totalAmount: totalAmount,
-            slipImage: req.file.path // บันทึกที่อยู่ไฟล์ลง Database
-        });
-
-        res.status(201).json({ message: 'สั่งซื้อและอัปโหลดสลิปสำเร็จ', order: newOrder });
-    } catch (error) {
-        res.status(500).json({ message: 'สั่งซื้อไม่สำเร็จ', error: error.message });
+// ==========================================
+// 🛠️ ฟังก์ชันตั้งค่าการส่งอีเมลผ่าน Brevo (SMTP)
+// ==========================================
+const transporter = nodemailer.createTransport({
+    host: 'smtp-relay.brevo.com',
+    port: 587,
+    secure: false, // ใช้ false สำหรับ port 587
+    auth: {
+        user: process.env.EMAIL_USER, // อีเมลที่สมัคร Brevo
+        pass: process.env.EMAIL_PASS  // รหัสผ่าน SMTP จาก Brevo
     }
 });
 
@@ -35,54 +26,120 @@ router.post('/checkout', protect, authorize('customer'), upload.single('slip'), 
 // ==========================================
 router.get('/myorders', protect, async (req, res) => {
     try {
-        // หาออเดอร์ที่มี user id ตรงกับคนที่ล็อกอินอยู่
         const orders = await Order.find({ user: req.user.id })
-            .populate('items.product', 'title coverImage price') // ดึงข้อมูลหนังสือมาโชว์ด้วย
-            .sort({ createdAt: -1 }); // เรียงจากออเดอร์ใหม่สุดไปเก่าสุด
-
+            .populate('items.product', 'title coverImage price')
+            .sort({ createdAt: -1 });
         res.json(orders);
     } catch (error) {
-        res.status(500).json({ message: 'ดึงข้อมูลประวัติการสั่งซื้อไม่สำเร็จ', error: error.message });
+        res.status(500).json({ message: 'ดึงข้อมูลประวัติไม่สำเร็จ', error: error.message });
     }
 });
 
-// 🔴 [GET] เจ้าของร้าน/แอดมิน ดูคำสั่งซื้อทั้งหมด
+// ==========================================
+// 🟢 [GET] ดึงข้อมูลออเดอร์ทั้งหมด (สำหรับ Admin)
+// ==========================================
 router.get('/', protect, authorize('owner', 'admin'), async (req, res) => {
     try {
-        // .populate('user') จะดึงข้อมูลชื่อลูกค้ามาโชว์ด้วย
-        const orders = await Order.find().populate('user', 'username email');
+        const orders = await Order.find()
+            .populate('user', 'username email')
+            .populate('items.product', 'title price')
+            .sort({ createdAt: -1 });
         res.json(orders);
     } catch (error) {
-        res.status(500).json({ message: 'ดึงข้อมูลคำสั่งซื้อไม่สำเร็จ' });
+        res.status(500).json({ message: 'ดึงข้อมูลออเดอร์ไม่สำเร็จ' });
     }
 });
 
-/// ==========================================
-// 🟢 [PUT] อัปเดตสถานะการชำระเงิน + ตัดสต๊อกอัตโนมัติ (เฉพาะ Admin)
 // ==========================================
-router.put('/:id/status', protect, async (req, res) => {
+// 🟢 [POST] สร้างคำสั่งซื้อใหม่ + อัปโหลดสลิป
+// ==========================================
+router.post('/', protect, upload.single('slipImage'), async (req, res) => {
+    try {
+        const { items, totalAmount } = req.body;
+        
+        let slipImageUrl = '';
+        if (req.file) {
+            slipImageUrl = req.file.path;
+        }
+
+        let parsedItems = [];
+        if (typeof items === 'string') {
+            parsedItems = JSON.parse(items);
+        } else {
+            parsedItems = items;
+        }
+
+        const newOrder = await Order.create({
+            user: req.user.id,
+            items: parsedItems,
+            totalAmount: Number(totalAmount),
+            slipImage: slipImageUrl,
+            paymentStatus: 'pending'
+        });
+
+        res.status(201).json({ message: 'สั่งซื้อสำเร็จ! รอแอดมินตรวจสอบสลิป', order: newOrder });
+    } catch (error) {
+        console.error("Order Error:", error);
+        res.status(500).json({ message: 'สั่งซื้อไม่สำเร็จ', error: error.message });
+    }
+});
+
+// ==========================================
+// 🟢 [PUT] อัปเดตสถานะการชำระเงิน + ตัดสต๊อก + 📧 ส่งอีเมล (เฉพาะ Admin)
+// ==========================================
+router.put('/:id/status', protect, authorize('owner', 'admin'), async (req, res) => {
     try {
         const { paymentStatus } = req.body;
-        const order = await Order.findById(req.params.id);
+        
+        // 🌟 ดึงข้อมูลออเดอร์และ populate หาข้อมูลลูกค้าด้วย
+        const order = await Order.findById(req.params.id).populate('user', 'username email');
 
         if (!order) {
             return res.status(404).json({ message: 'ไม่พบคำสั่งซื้อนี้' });
         }
 
-        // 🔥 ไฮไลท์: ถ้ายืนยันว่า "ชำระเงินเรียบร้อย" (completed) ให้ไปหักสต๊อกหนังสือ
+        // ถ้าสถานะเดิมยังไม่เสร็จ และกำลังจะเปลี่ยนเป็น 'completed'
         if (paymentStatus === 'completed' && order.paymentStatus !== 'completed') {
-            // ดึงโมเดล Product มาใช้ (ถ้าด้านบนของไฟล์ยังไม่ได้ import ให้ใส่ const Product = require('../models/Product'); ไว้บนสุดด้วยนะครับ)
-            const Product = require('../models/Product'); 
             
-            // วนลูปหักสต๊อกหนังสือทุกเล่มที่อยู่ในตะกร้าคำสั่งซื้อนี้
+            // 1. ตัดสต๊อกหนังสือ
             for (let item of order.items) {
                 await Product.findByIdAndUpdate(item.product, {
-                    $inc: { stock: -1 } // หักสต๊อกลง 1 เล่ม
+                    $inc: { stock: -1 }
                 });
+            }
+
+            // 🌟 2. ส่งอีเมลแจ้งลูกค้า 🌟
+            try {
+                const mailOptions = {
+                    from: '"E-Bookstore Admin" <noreply@ebookstore.com>', // ชื่อผู้ส่ง
+                    to: order.user.email, // ส่งไปที่อีเมลลูกค้าคนที่สั่งซื้อ
+                    subject: `🎉 อนุมัติคำสั่งซื้อเรียบร้อยแล้ว (ออเดอร์ #${order._id.toString().slice(-6)})`,
+                    html: `
+                        <div style="font-family: Arial, sans-serif; padding: 20px; color: #333;">
+                            <h2 style="color: #2ecc71;">ขอบคุณที่อุดหนุนครับ คุณ ${order.user.username}!</h2>
+                            <p>แอดมินได้ทำการตรวจสอบสลิปและ <strong>อนุมัติคำสั่งซื้อของคุณเรียบร้อยแล้ว</strong></p>
+                            <div style="background-color: #f9f9f9; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                                <p><strong>รหัสคำสั่งซื้อ:</strong> ${order._id}</p>
+                                <p><strong>ยอดชำระเงิน:</strong> ฿${order.totalAmount}</p>
+                                <p><strong>สถานะ:</strong> <span style="color: #2ecc71; font-weight: bold;">ชำระเงินเรียบร้อย</span></p>
+                            </div>
+                            <p>คุณสามารถดาวน์โหลดหรืออ่านหนังสือที่ซื้อไว้ได้ในระบบเลยครับ</p>
+                            <p>ขอให้สนุกกับการอ่านนะครับ 📚</p>
+                        </div>
+                    `
+                };
+
+                // สั่งส่งอีเมล!
+                await transporter.sendMail(mailOptions);
+                console.log('✅ ส่งอีเมลสำเร็จไปที่:', order.user.email);
+
+            } catch (emailError) {
+                console.error('❌ ส่งอีเมลล้มเหลว:', emailError);
+                // ถึงส่งเมลพลาด ก็ปล่อยให้ออเดอร์ผ่านไป ไม่ต้องให้ระบบล่ม
             }
         }
 
-        // อัปเดตสถานะของออเดอร์
+        // อัปเดตสถานะของออเดอร์ลงฐานข้อมูล
         order.paymentStatus = paymentStatus;
         await order.save();
 

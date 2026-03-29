@@ -1,7 +1,7 @@
 // Front-end/src/pages/Login.jsx
 import React, { useState } from 'react';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom'; // 🌟 เพิ่ม Link เข้ามา
 
 export default function Login() {
   const [isLoginMode, setIsLoginMode] = useState(true);
@@ -10,9 +10,13 @@ export default function Login() {
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  // 🌟 เพิ่ม State สำหรับช่องยืนยันรหัสผ่าน
   const [confirmPassword, setConfirmPassword] = useState(''); 
   const [role, setRole] = useState('customer');
+  
+  // 🌟 เพิ่ม State ไว้โชว์สถานะตอนส่งอีเมล
+  const [isLoading, setIsLoading] = useState(false);
+  const [forgotMessage, setForgotMessage] = useState('');
+
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -27,12 +31,10 @@ export default function Login() {
         navigate('/');
         window.location.reload();
       } else {
-        // 🌟 ดักจับรหัสผ่านไม่ตรงกัน
+        // สมัครสมาชิก (ดักจับความปลอดภัย)
         if (password !== confirmPassword) {
             return alert('❌ รหัสผ่านและการยืนยันรหัสผ่านไม่ตรงกัน กรุณาตรวจสอบอีกครั้งครับ');
         }
-
-        // 🌟 ดักจับความปลอดภัยของรหัสผ่าน
         if (password.length < 8) {
             return alert('❌ รหัสผ่านต้องมีความยาวอย่างน้อย 8 ตัวอักษรครับ');
         }
@@ -43,11 +45,9 @@ export default function Login() {
             return alert('❌ รหัสผ่านต้องมีตัวอักษรภาษาอังกฤษอย่างน้อย 1 ตัวครับ');
         }
 
-        // สมัครสมาชิก
         await axios.post('https://bookstore-api-bmay.onrender.com/api/auth/register', { username, email, password, role });
         alert('สมัครสมาชิกสำเร็จ! กรุณาเข้าสู่ระบบ');
         setIsLoginMode(true);
-        // ล้างช่องรหัสผ่านเพื่อความปลอดภัย
         setPassword('');
         setConfirmPassword('');
       }
@@ -56,16 +56,22 @@ export default function Login() {
     }
   };
 
-  const handleResetPassword = async (e) => {
+  // 🌟 ฟังก์ชันใหม่: จัดการการขอลืมรหัสผ่าน (ส่งอีเมล)
+  const handleForgotPassword = async (e) => {
       e.preventDefault();
+      setIsLoading(true);
+      setForgotMessage('');
+      
       try {
-          const res = await axios.post('https://bookstore-api-bmay.onrender.com/api/auth/reset-password', { email, newPassword: password });
-          alert(res.data.message);
-          setIsForgotPasswordMode(false); 
-          setIsLoginMode(true);
-          setPassword(''); 
+          // ยิง API ไปขอลิงก์รีเซ็ตผ่านอีเมล
+          const res = await axios.post('https://bookstore-api-bmay.onrender.com/api/auth/forgot-password', { email });
+          setForgotMessage(`✅ ${res.data.message}`);
+          
+          // ไม่ต้องพาไปหน้าไหน ให้ลูกค้าไปเช็กอีเมลตัวเอง
       } catch (error) {
-          alert(error.response?.data?.message || 'รีเซ็ตรหัสผ่านไม่สำเร็จ');
+          alert(error.response?.data?.message || 'ส่งลิงก์ไม่สำเร็จ กรุณาลองใหม่');
+      } finally {
+          setIsLoading(false);
       }
   };
 
@@ -75,14 +81,23 @@ export default function Login() {
         
         {isForgotPasswordMode ? (
             <>
-                <h2 style={{ textAlign: 'center', marginBottom: '20px', color: '#e74c3c' }}>ลืมรหัสผ่าน</h2>
-                <form onSubmit={handleResetPassword} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                <h2 style={{ textAlign: 'center', marginBottom: '10px', color: '#e74c3c' }}>ลืมรหัสผ่าน</h2>
+                <p style={{ textAlign: 'center', color: '#7f8c8d', marginBottom: '20px', fontSize: '14px' }}>
+                    กรอกอีเมลของคุณเพื่อรับลิงก์รีเซ็ตรหัสผ่าน
+                </p>
+
+                {/* แจ้งเตือนเมื่อส่งอีเมลสำเร็จ */}
+                {forgotMessage && <div style={{ backgroundColor: '#d4edda', color: '#155724', padding: '10px', borderRadius: '5px', marginBottom: '15px', textAlign: 'center', fontSize: '14px' }}>{forgotMessage}</div>}
+
+                <form onSubmit={handleForgotPassword} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
                     <input type="email" placeholder="ใส่อีเมลที่เคยสมัครไว้" required value={email} onChange={e => setEmail(e.target.value)} style={{ padding: '10px', borderRadius: '5px', border: '1px solid #ccc' }} />
-                    <input type="password" placeholder="ตั้งรหัสผ่านใหม่" required value={password} onChange={e => setPassword(e.target.value)} style={{ padding: '10px', borderRadius: '5px', border: '1px solid #ccc' }} />
-                    <button type="submit" style={{ padding: '12px', backgroundColor: '#e74c3c', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold' }}>รีเซ็ตรหัสผ่าน</button>
+                    
+                    <button type="submit" disabled={isLoading} style={{ padding: '12px', backgroundColor: isLoading ? '#bdc3c7' : '#e74c3c', color: 'white', border: 'none', borderRadius: '5px', cursor: isLoading ? 'not-allowed' : 'pointer', fontWeight: 'bold' }}>
+                        {isLoading ? 'กำลังส่งลิงก์...' : 'ส่งลิงก์รีเซ็ตรหัสผ่าน'}
+                    </button>
                 </form>
                 <div style={{ textAlign: 'center', marginTop: '15px' }}>
-                    <a href="#" onClick={() => { setIsForgotPasswordMode(false); setIsLoginMode(true); }} style={{ color: '#3498db', textDecoration: 'none' }}>กลับไปหน้าเข้าสู่ระบบ</a>
+                    <a href="#" onClick={() => { setIsForgotPasswordMode(false); setIsLoginMode(true); setForgotMessage(''); }} style={{ color: '#3498db', textDecoration: 'none' }}>⬅️ กลับไปหน้าเข้าสู่ระบบ</a>
                 </div>
             </>
         ) : (
@@ -107,7 +122,6 @@ export default function Login() {
                   
                   <input type="password" placeholder={isLoginMode ? "รหัสผ่าน" : "ตั้งรหัสผ่าน (อักษร+ตัวเลข 8 ตัวขึ้นไป)"} required value={password} onChange={e => setPassword(e.target.value)} style={{ padding: '10px', borderRadius: '5px', border: '1px solid #ccc' }} />
                   
-                  {/* 🌟 ช่องยืนยันรหัสผ่าน (จะโผล่มาเฉพาะตอนสมัครสมาชิก) */}
                   {!isLoginMode && (
                     <input type="password" placeholder="ยืนยันรหัสผ่านอีกครั้ง" required value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} style={{ padding: '10px', borderRadius: '5px', border: '1px solid #ccc' }} />
                   )}

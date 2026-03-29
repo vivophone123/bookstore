@@ -1,19 +1,17 @@
+// Front-end/src/App.jsx
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useNavigate } from 'react-router-dom';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Cart from './pages/Cart';
 import Admin from './pages/Admin';
-import Profile from './pages/Profile';
-import ForgotPassword from './pages/ForgotPassword';
+// ❌ ลบการ import Profile ออก (เพราะเหมือนคุณยังไม่มีไฟล์นี้)
+// ❌ ลบการ import ForgotPassword ออก (เพราะเรารวมไว้ใน Login แล้ว)
 import ResetPassword from './pages/ResetPassword';
-
 
 function Navbar() {
   const navigate = useNavigate();
-
   const token = localStorage.getItem('token'); 
-
   const user = JSON.parse(localStorage.getItem('user')); 
 
   const handleLogout = () => {
@@ -65,7 +63,7 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/cart" element={<Cart />} />
           <Route path="/admin" element={<Admin />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
+          {/* ❌ ลบ Route สำหรับ /forgot-password ออก */}
           <Route path="/reset-password/:token" element={<ResetPassword />} />
         </Routes>
       </div>

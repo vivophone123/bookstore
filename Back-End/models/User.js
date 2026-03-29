@@ -10,10 +10,12 @@ const userSchema = new mongoose.Schema({
         type: String, 
         enum: ['customer', 'owner', 'admin'], 
         default: 'customer' 
-    }
+    },
+    // 🌟 เพิ่ม 2 ฟิลด์นี้สำหรับระบบลืมรหัสผ่าน
+    resetPasswordToken: String,
+    resetPasswordExpire: Date
 }, { timestamps: true });
 
-// เข้ารหัสผ่านก่อนบันทึกลง Database เสมอ (OWASP A02)
 // เข้ารหัสผ่านก่อนบันทึกลง Database เสมอ (OWASP A02)
 // เข้ารหัสผ่านก่อนบันทึกลง Database (เวอร์ชัน Mongoose ใหม่ ไม่ต้องใช้ next)
 userSchema.pre('save', async function () {

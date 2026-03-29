@@ -8,8 +8,9 @@ export default function ResetPassword() {
     const [confirmPassword, setConfirmPassword] = useState('');
     const [message, setMessage] = useState('');
     const [error, setError] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
     
-    // ดึง Token มาจาก URL
+    // ดึง Token ที่แนบมากับลิงก์ URL (เช่น /reset-password/1234abc...)
     const { token } = useParams();
     const navigate = useNavigate();
 
@@ -18,51 +19,66 @@ export default function ResetPassword() {
         setMessage('');
         setError('');
 
+        // ตรวจสอบความปลอดภัยเบื้องต้น
         if (password !== confirmPassword) {
-            return setError('รหัสผ่านทั้งสองช่องไม่ตรงกันครับ');
+            return setError('รหัสผ่านและการยืนยันรหัสผ่านไม่ตรงกันครับ');
         }
+        if (password.length < 8 || !/\d/.test(password) || !/[a-zA-Z]/.test(password)) {
+            return setError('รหัสผ่านต้องมี 8 ตัวอักษรขึ้นไป และมีทั้งตัวอักษรและตัวเลขครับ');
+        }
+
+        setIsLoading(true);
 
         try {
             const res = await axios.put(`https://bookstore-api-bmay.onrender.com/api/auth/reset-password/${token}`, { password });
             setMessage(res.data.message);
-            // เปลี่ยนรหัสเสร็จ ให้เด้งไปหน้า Login อัตโนมัติหลังผ่านไป 3 วินาที
+            
+            // รอ 3 วินาทีแล้วพากลับไปหน้า Login อัตโนมัติ
             setTimeout(() => navigate('/login'), 3000);
         } catch (err) {
-            setError(err.response?.data?.message || 'ลิงก์นี้หมดอายุหรือไม่ถูกต้อง');
+            setError(err.response?.data?.message || 'ลิงก์รีเซ็ตรหัสผ่านนี้หมดอายุหรือไม่ถูกต้องครับ');
+        } finally {
+            setIsLoading(false);
         }
     };
 
     return (
-        <div style={{ maxWidth: '400px', margin: '50px auto', padding: '30px', backgroundColor: '#fff', borderRadius: '10px', boxShadow: '0 4px 15px rgba(0,0,0,0.1)' }}>
-            <h2 style={{ textAlign: 'center', color: '#2c3e50', marginBottom: '20px' }}>ตั้งรหัสผ่านใหม่</h2>
+        <div style={{ display: 'flex', justifyContent: 'center', marginTop: '50px' }}>
+            <div style={{ width: '400px', padding: '30px', border: '1px solid #ddd', borderRadius: '10px', boxShadow: '0 4px 15px rgba(0,0,0,0.1)', backgroundColor: 'white' }}>
+                <h2 style={{ textAlign: 'center', color: '#2ecc71', marginBottom: '10px' }}>ตั้งรหัสผ่านใหม่</h2>
+                <p style={{ textAlign: 'center', color: '#7f8c8d', marginBottom: '20px', fontSize: '14px' }}>
+                    กรุณาตั้งรหัสผ่านใหม่ที่คาดเดาได้ยากครับ
+                </p>
 
-            {message && <div style={{ backgroundColor: '#d4edda', color: '#155724', padding: '10px', borderRadius: '5px', marginBottom: '15px', textAlign: 'center' }}>✅ {message}<br/><small>กำลังพาไปหน้า Login...</small></div>}
-            {error && <div style={{ backgroundColor: '#f8d7da', color: '#721c24', padding: '10px', borderRadius: '5px', marginBottom: '15px', textAlign: 'center' }}>❌ {error}</div>}
+                {message && <div style={{ backgroundColor: '#d4edda', color: '#155724', padding: '10px', borderRadius: '5px', marginBottom: '15px', textAlign: 'center', fontSize: '14px' }}>✅ {message}<br/><small style={{color: '#666'}}>กำลังพากลับหน้าล็อกอินใน 3 วินาที...</small></div>}
+                {error && <div style={{ backgroundColor: '#f8d7da', color: '#721c24', padding: '10px', borderRadius: '5px', marginBottom: '15px', textAlign: 'center', fontSize: '14px' }}>❌ {error}</div>}
 
-            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                <input 
-                    type="password" 
-                    placeholder="รหัสผ่านใหม่ (อย่างน้อย 8 ตัว มีทั้งตัวเลข/ตัวอักษร)" 
-                    required 
-                    value={password} 
-                    onChange={(e) => setPassword(e.target.value)} 
-                    style={{ padding: '12px', borderRadius: '5px', border: '1px solid #ccc', fontSize: '16px' }}
-                />
-                <input 
-                    type="password" 
-                    placeholder="ยืนยันรหัสผ่านใหม่อีกครั้ง" 
-                    required 
-                    value={confirmPassword} 
-                    onChange={(e) => setConfirmPassword(e.target.value)} 
-                    style={{ padding: '12px', borderRadius: '5px', border: '1px solid #ccc', fontSize: '16px' }}
-                />
-                <button 
-                    type="submit" 
-                    style={{ padding: '12px', backgroundColor: '#2ecc71', color: 'white', border: 'none', borderRadius: '5px', fontSize: '16px', fontWeight: 'bold', cursor: 'pointer' }}
-                >
-                    บันทึกรหัสผ่านใหม่
-                </button>
-            </form>
+                <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                    <input 
+                        type="password" 
+                        placeholder="รหัสผ่านใหม่ (อักษร+ตัวเลข 8 ตัวขึ้นไป)" 
+                        required 
+                        value={password} 
+                        onChange={(e) => setPassword(e.target.value)} 
+                        style={{ padding: '10px', borderRadius: '5px', border: '1px solid #ccc' }}
+                    />
+                    <input 
+                        type="password" 
+                        placeholder="ยืนยันรหัสผ่านใหม่อีกครั้ง" 
+                        required 
+                        value={confirmPassword} 
+                        onChange={(e) => setConfirmPassword(e.target.value)} 
+                        style={{ padding: '10px', borderRadius: '5px', border: '1px solid #ccc' }}
+                    />
+                    <button 
+                        type="submit" 
+                        disabled={isLoading || message}
+                        style={{ padding: '12px', backgroundColor: (isLoading || message) ? '#bdc3c7' : '#2ecc71', color: 'white', border: 'none', borderRadius: '5px', cursor: (isLoading || message) ? 'not-allowed' : 'pointer', fontWeight: 'bold' }}
+                    >
+                        {isLoading ? 'กำลังบันทึก...' : 'บันทึกรหัสผ่านใหม่'}
+                    </button>
+                </form>
+            </div>
         </div>
     );
 }

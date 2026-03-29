@@ -2,29 +2,16 @@
 const express = require('express');
 const Order = require('../models/Order');
 const Product = require('../models/Product');
-const User = require('../models/User'); // 🌟 เพิ่มบรรทัดนี้เพื่อดึงอีเมลลูกค้า
+const User = require('../models/User');
 const { protect, authorize } = require('../middleware/authMiddleware');
 const upload = require('../middleware/uploadMiddleware');
-const nodemailer = require('nodemailer'); // 🌟 เรียกใช้ไลบรารีส่งอีเมล
+const sgMail = require('@sendgrid/mail'); // 🌟 เรียกใช้ SendGrid
 const router = express.Router();
 
 // ==========================================
-// 🛠️ ฟังก์ชันตั้งค่าการส่งอีเมล (บังคับใช้ Port 587 เพื่อเลี่ยงการโดนบล็อก)
+// 🛠️ ตั้งค่า API Key ของ SendGrid
 // ==========================================
-const transporter = nodemailer.createTransport({
-    host: 'smtp.gmail.com',
-    port: 587,
-    secure: false, // บังคับใช้ false สำหรับพอร์ต 587
-    requireTLS: true,
-    auth: {
-        user: process.env.EMAIL_USER, 
-        pass: process.env.EMAIL_PASS  
-    },
-    tls: {
-        // ยอมให้ข้ามการตรวจสอบใบรับรองบางอย่างที่ทำให้ Render ชอบงอแง
-        rejectUnauthorized: false 
-    }
-});
+sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
 // ==========================================
 // 🟢 [GET] ดึงประวัติการสั่งซื้อของตัวเอง (สำหรับลูกค้า)
@@ -90,13 +77,11 @@ router.post('/', protect, upload.single('slipImage'), async (req, res) => {
 });
 
 // ==========================================
-// 🟢 [PUT] อัปเดตสถานะการชำระเงิน + ตัดสต๊อก + 📧 ส่งอีเมล (เฉพาะ Admin)
+// 🟢 [PUT] อัปเดตสถานะการชำระเงิน + ตัดสต๊อก + 📧 ส่งอีเมลด้วย SendGrid
 // ==========================================
 router.put('/:id/status', protect, authorize('owner', 'admin'), async (req, res) => {
     try {
         const { paymentStatus } = req.body;
-        
-        // 🌟 ดึงข้อมูลออเดอร์และ populate หาข้อมูลลูกค้าด้วย
         const order = await Order.findById(req.params.id).populate('user', 'username email');
 
         if (!order) {
@@ -113,11 +98,11 @@ router.put('/:id/status', protect, authorize('owner', 'admin'), async (req, res)
                 });
             }
 
-            // 🌟 2. ส่งอีเมลแจ้งลูกค้า 🌟
+            // 🌟 2. ส่งอีเมลด้วย SendGrid 🌟
             try {
-                const mailOptions = {
-                    from: '"E-Bookstore Admin" <noreply@ebookstore.com>', // ชื่อผู้ส่ง
-                    to: order.user.email, // ส่งไปที่อีเมลลูกค้าคนที่สั่งซื้อ
+                const msg = {
+                    to: order.user.email, // ส่งไปที่อีเมลลูกค้า
+                    from: process.env.SENDGRID_SENDER_EMAIL, // 🌟 ต้องเป็นอีเมลที่ยืนยันกับ SendGrid แล้วเท่านั้น
                     subject: `🎉 อนุมัติคำสั่งซื้อเรียบร้อยแล้ว (ออเดอร์ #${order._id.toString().slice(-6)})`,
                     html: `
                         <div style="font-family: Arial, sans-serif; padding: 20px; color: #333;">
@@ -134,17 +119,15 @@ router.put('/:id/status', protect, authorize('owner', 'admin'), async (req, res)
                     `
                 };
 
-                // สั่งส่งอีเมล!
-                await transporter.sendMail(mailOptions);
-                console.log('✅ ส่งอีเมลสำเร็จไปที่:', order.user.email);
+                await sgMail.send(msg);
+                console.log('✅ ส่งอีเมลผ่าน SendGrid สำเร็จไปที่:', order.user.email);
 
             } catch (emailError) {
-                console.error('❌ ส่งอีเมลล้มเหลว:', emailError);
-                // ถึงส่งเมลพลาด ก็ปล่อยให้ออเดอร์ผ่านไป ไม่ต้องให้ระบบล่ม
+                console.error('❌ ส่งอีเมลล้มเหลว:', emailError.response ? emailError.response.body : emailError);
             }
         }
 
-        // อัปเดตสถานะของออเดอร์ลงฐานข้อมูล
+        // อัปเดตสถานะ
         order.paymentStatus = paymentStatus;
         await order.save();
 

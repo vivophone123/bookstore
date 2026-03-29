@@ -5,8 +5,6 @@ import Home from './pages/Home';
 import Login from './pages/Login';
 import Cart from './pages/Cart';
 import Admin from './pages/Admin';
-// ❌ ลบการ import Profile ออก (เพราะเหมือนคุณยังไม่มีไฟล์นี้)
-// ❌ ลบการ import ForgotPassword ออก (เพราะเรารวมไว้ใน Login แล้ว)
 import ResetPassword from './pages/ResetPassword';
 
 function Navbar() {
